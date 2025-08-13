@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian License Plate Recognition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">
+            Indian License Plate Recognition
+        </h1>
+        <p class="text-center text-gray-600 mb-8">
+            Upload an image of a car to detect and read its license plate.
+        </p>
+
+        <!-- Input and Upload Section -->
+        <div class="mb-8">
+            <label for="image-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                Upload Image
+            </label>
+            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors duration-200" id="drop-zone">
+                <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-20m32-12a4 4 0 00-4-4H12a4 4 0 00-4 4m32 0v8m0 0v-8m0 0v8m0-8H12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-600">
+                        <label for="image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                            <span>Upload a file</span>
+                            <input id="image-upload" name="image" type="file" class="sr-only" accept="image/*">
+                        </label>
+                        <p class="pl-1">or drag and drop</p>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                    </p>
+                </div>
+            </div>
+            <div id="image-preview" class="mt-4 hidden text-center">
+                <img src="#" alt="Image Preview" class="mx-auto max-h-48 rounded-md shadow">
+            </div>
+        </div>
+
+        <button id="recognize-button" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+            Recognize Plate Number
+        </button>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="mt-8 text-center hidden">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full"></div>
+            <p class="mt-2 text-gray-600">Processing image...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="mt-8 hidden">
+            <div class="p-4 bg-green-100 rounded-lg shadow-inner">
+                <h3 class="text-lg font-semibold text-green-800">Detected Plate Number:</h3>
+                <p id="plate-number" class="mt-2 text-2xl font-bold text-green-900"></p>
+            </div>
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800">Processed Image:</h3>
+                <img id="processed-image" src="" alt="Processed Image" class="mt-2 w-full rounded-md shadow-md border border-gray-200">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('image-upload');
+        const recognizeButton = document.getElementById('recognize-button');
+        const loadingIndicator = document.getElementById('loading');
+        const resultsSection = document.getElementById('results');
+        const plateNumberText = document.getElementById('plate-number');
+        const processedImage = document.getElementById('processed-image');
+        const imagePreview = document.getElementById('image-preview');
+        const dropZone = document.getElementById('drop-zone');
+
+        let uploadedFile = null;
+
+        // Handle file selection
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Handle drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        function handleFile(file) {
+            uploadedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.querySelector('img').src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+                recognizeButton.disabled = false;
+                recognizeButton.classList.remove('bg-gray-400');
+                recognizeButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Handle button click
+        recognizeButton.addEventListener('click', async () => {
+            if (!uploadedFile) {
+                alert('Please upload an image first.');
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            recognizeButton.disabled = true;
+            recognizeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            recognizeButton.classList.add('bg-gray-400');
+
+            const formData = new FormData();
+            formData.append('image', uploadedFile);
+
+            try {
+                const response = await fetch('/recognize', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                plateNumberText.textContent = data.plate_number;
+                processedImage.src = `data:image/png;base64,${data.processed_image}`;
+
+                resultsSection.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error during recognition:', error);
+                plateNumberText.textContent = 'Error: ' + error.message;
+                resultsSection.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                recognizeButton.disabled = false;
+                recognizeButton.classList.remove('bg-gray-400');
+                recognizeButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+        });
+    </script>
+</body>
+</html>
