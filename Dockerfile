@@ -10,6 +10,11 @@ COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# --- ADDED STEP: Pre-download EasyOCR models during the build process ---
+# This is the key to solving the memory issue.
+# We'll run a Python command to download the models directly.
+RUN python -c "import easyocr; easyocr.Reader(['en'], gpu=False)"
+
 # Copy the rest of the application code into the container
 COPY . .
 
