@@ -35,7 +35,7 @@ def get_reader():
 def recognize_plate(image_data):
     """
     Core ANPR logic encapsulated in a function.
-    Takes image data (bytes) as input and returns the recognized text and processed image.
+    Takes image data (bytes) as input and returns the recognized text.
     """
     reader = get_reader()
     
@@ -44,7 +44,7 @@ def recognize_plate(image_data):
     
     # Check if the image is valid
     if img is None:
-        return None, "Error: Invalid image data."
+        return "Error: Invalid image data."
 
     # Convert to BGR for OpenCV
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -67,7 +67,6 @@ def recognize_plate(image_data):
             break
 
     final_text = "No Plate Detected"
-    processed_img_base64 = None
 
     if location is not None:
         # Masking and cropping the license plate
@@ -120,20 +119,7 @@ def recognize_plate(image_data):
             else:
                 final_text = corrected_text
         
-        # Draw the bounding box on the original image
-        res_img = cv2.putText(img, text=final_text, org=(location[0][0][0], location[1][0][1] + 60), 
-                              fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
-        res_img = cv2.rectangle(img, tuple(location[0][0]), tuple(location[2][0]), (0, 255, 0), 3)
-
-        # Convert the processed image to Base64 to send to the frontend
-        _, buffer = cv2.imencode('.png', res_img)
-        processed_img_base64 = base64.b64encode(buffer).decode('utf-8')
-    else:
-        # If no plate is found, just send back the original image
-        _, buffer = cv2.imencode('.png', img)
-        processed_img_base64 = base64.b64encode(buffer).decode('utf-8')
-        
-    return final_text, processed_img_base64
+    return final_text
 
 
 @app.route('/')
@@ -144,7 +130,7 @@ def home():
 @app.route('/recognize', methods=['POST'])
 def recognize():
     """
-    API endpoint to receive the image and return the recognized text and processed image.
+    API endpoint to receive the image and return the recognized text.
     """
     if 'image' not in request.files:
         return jsonify({"error": "No image file provided"}), 400
@@ -152,11 +138,10 @@ def recognize():
     file = request.files['image']
     image_data = file.read()
     
-    recognized_text, processed_image = recognize_plate(image_data)
+    recognized_text = recognize_plate(image_data)
     
     return jsonify({
-        "plate_number": recognized_text,
-        "processed_image": processed_image
+        "plate_number": recognized_text
     })
 
 if __name__ == '__main__':
