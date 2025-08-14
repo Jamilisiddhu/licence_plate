@@ -4,16 +4,18 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
+# Create a shared directory for models and set the environment variable
+RUN mkdir -p /app/models
+ENV EASYOCR_MODULE_PATH=/app/models
+
 # Copy the requirements file into the container
 COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- ADDED STEP: Pre-download EasyOCR models during the build process ---
-# This is the key to solving the memory issue.
-# We'll run a Python command to download the models directly.
-RUN python -c "import easyocr; easyocr.Reader(['en'], gpu=False)"
+# Download EasyOCR models to the shared directory during the build phase
+RUN python -c "import easyocr; reader = easyocr.Reader(['en'], gpu=False)"
 
 # Copy the rest of the application code into the container
 COPY . .
