@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download EasyOCR models to the shared directory during the build phase
-RUN python -c "import easyocr; reader = easyocr.Reader(['en'], gpu=False)"
+RUN python -c "import easyocr; easyocr.Reader(['en'], gpu=False)"
 
 # Copy the rest of the application code into the container
 COPY . .
